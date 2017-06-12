@@ -1,12 +1,18 @@
 project(pcapSmaple)
 cmake_minimum_required(VERSION 2.8)
 
-SET (CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_BUILD_TYPE "Debug")
+
+set(CMAKE_CXX_FLAGS "-std=c++0x")
 
 aux_source_directory(. SRC_LIST)
+aux_source_directory(decode_packet_classes SRC_LIST)
+aux_source_directory(decode_packet_classes/decode_tcp_data_classes SRC_LIST)
+include_directories(.)
+
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 
-target_link_libraries(${PROJECT_NAME} pcap curl)
+target_link_libraries(${PROJECT_NAME} pcap pthread)
 
 #message(STATUS ${CMAKE_INSTALL_PREFIX})
 #message(STATUS ${EXECUTABLE_OUTPUT_PATH})
