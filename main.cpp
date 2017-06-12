@@ -25,93 +25,114 @@
 #include <curlpp/cURLpp.hpp>
 #include <curlpp/Types.hpp>
 
-#include <curl/curl.h>
-#include <curl/easy.h>
-
 #include <map>
-
-#include <regex>
 
 class HTTPRequestHeader
 {
     #define HEADERS 7
     const static std::string request_fields[HEADERS];
-    enum Headers
-    {
 
-    };
+    #define METHODS     2
+    const static std::string method[METHODS];
+
+    #define PROTOCOLS   2
+    const static std::string protocol[PROTOCOLS];
 
     /// Start line
     std::string //Request-Line: GET /index.html HTTP/1.1
                 m_method,
-                m_URI,
-                m_httpVersion,
-    /// Headers
-                m_host,           //127.0.0.1:5000
-                m_userAgent,      //Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:53.0) Gecko/20100101 Firefox/53.0
-                m_acceptLanguage,
-                m_acceptEncoding,
-                m_connection,
-                m_upgradeInsecureRequests;
+                m_URL,
+                m_httpVersion;
 
     std::map<std::string, std::string> m_headers;
-    public:
-        HTTPRequestHeader()=default;
-        HTTPRequestHeader(const std::string req)
-        {
-            /*
-            size_t pos = req.find(std::string("GET"));
-            if(pos==std::string::npos)
-            {
-                pos = req.find(std::string("POST"));
-                if(pos==std::string::npos)
-                {
-                    throw "Error";
-                }
-                else
-                {
-                    m_method = "POST";
-                }
-            }
-            else
-            {
-                m_method = "GET";
-            }
+private:
+    HTTPRequestHeader()=default;
+    HTTPRequestHeader(const HTTPRequestHeader&)=delete;
+    HTTPRequestHeader& operator=(const HTTPRequestHeader&)=delete;
+public:
+    HTTPRequestHeader (HTTPRequestHeader&& obj)=default;
+    void print()
+    {
+        std::cout << m_method << " " << m_URL << " " << m_httpVersion << std::endl;
 
-            pos++;
-            size_t pos2 = req.find(std::string("HTTP"),pos);
-            std::cout <<  req <<std::endl;
-            */
+        for(const auto& v : m_headers)
+        {
+            std::cout << v.second << std::endl;
         }
+    }
+public:
+    /**
+     * @brief parse
+     * @param req
+     * @return
+     *
+     *
+     * request smaple: req = "GET / HTTP/1.1\r\nHost: 127.0.0.1:5000\r\nUser-Agent: Mozilla/5.0\r\n\r\n"
+     */
+    static HTTPRequestHeader&& parse(const std::string req)
+    {
+        HTTPRequestHeader obj;
+        auto& m_method      = obj.m_method;
+        auto& m_httpVersion = obj.m_httpVersion;
+        auto& m_URL         = obj.m_URL;
+        auto& m_headers     = obj.m_headers;
 
-        int parse(const std::string req)
+
+        /// Parse Request-Line
+        std::string::size_type posMethodStart=std::string::npos,
+                               posProtoStart=std::string::npos;
+
+        for(int i=0 ; i<METHODS && std::string::npos==posMethodStart ; ++i)
         {
-            std::string::size_type posStart = 0,
-                                   posEnd;
-            const std::string end{"\r\n"};
-
-            for (size_t i=0 ; i<HEADERS ; ++i)
+            posMethodStart = req.find(method[i]);
+            if(std::string::npos != posMethodStart)
             {
-                posStart = req.find(request_fields[i]);
-                if(posStart!=std::string::npos)
+                m_method = method[i];
+            }
+        }
+        if(!m_method.empty())
+        {
+            for(int i=0 ; i<PROTOCOLS && std::string::npos==posProtoStart ; ++i)
+            {
+                posProtoStart = req.find(protocol[i]);
+                if(std::string::npos != posProtoStart)
                 {
-                    posStart+=(request_fields[i].length()+2); //2 = len(": ")
-                    posEnd = req.find(end, posStart);
-                    if(posEnd!=std::string::npos)
+                    m_httpVersion=protocol[i];
+                }
+            }
+            if(!m_httpVersion.empty())
+            {
+                const std::string::size_type posURLStart=posMethodStart+m_method.length()+1,    //+1 -- add length(' ')
+                                             URLLen     =posProtoStart-1-posURLStart;           //(posProtoStart-1) -- pos last URL symbol
+                m_URL=req.substr(posURLStart,URLLen);
+
+                /// Parse Headers
+                std::string::size_type posStart = 0,
+                                       posEnd;
+
+                const std::string end{"\r\n"};                    //end symbol seqence in header line
+
+                for (size_t i=0 ; i<HEADERS ; ++i)
+                {
+                    posStart = req.find(request_fields[i]);
+                    if(posStart!=std::string::npos)
                     {
-                        m_headers.insert(std::pair<std::string,std::string>(request_fields[i],req.substr(posStart, posEnd-posStart)));
+                        posStart+=(request_fields[i].length()+2); //+2 -- length(": ")
+                        posEnd = req.find(end, posStart);
+                        if(posEnd!=std::string::npos)
+                        {
+                            m_headers.insert(std::pair<std::string,std::string>(request_fields[i],req.substr(posStart, posEnd-posStart)));
+                        }
                     }
                 }
             }
-/*
-            for(const auto& v : m_headers)
-            {
-                std::cout << v.second << std::endl;
-            }
-*/
         }
-
+        return std::move(obj);
+    }
 };
+
+const std::string HTTPRequestHeader::method[METHODS]={"POST","GET"};
+const std::string HTTPRequestHeader::protocol[PROTOCOLS]={"HTTP/1.0", "HTTP/1.1"};
 
 const std::string HTTPRequestHeader::request_fields[]={"Host",
                                                        "User-Agent",
@@ -285,8 +306,8 @@ void pcap_handler_tcp(u_char *arg, const struct pcap_pkthdr *pkthdr, const u_cha
     {
         //std::cout << pac_num++ << " : ";
         //std::cout << pkt_data_ptr << std::endl;
-        HTTPRequestHeader h;
-        h.parse(std::string((char*)pkt_data_ptr, pkt_data_size));
+        //HTTPRequestHeader h;
+        HTTPRequestHeader::parse(std::string((char*)pkt_data_ptr, pkt_data_size)).print();
 
     }
     else
