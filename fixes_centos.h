@@ -3,6 +3,8 @@
 
 #define __FAVOR_BSD         //for th_* names
 
+#ifdef CENTOS
+
 #ifndef nullptr
 #define nullptr 0
 #endif
@@ -16,5 +18,7 @@ namespace std
     std::string to_string(uint32_t value);
     std::string to_string(int32_t value);
 }
+
+#endif
 
 #endif

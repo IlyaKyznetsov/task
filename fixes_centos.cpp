@@ -1,5 +1,6 @@
 #include "fixes_centos.h"
 
+#ifdef CENTOS
 
 std::string std::to_string(uint16_t value)
 {
@@ -23,3 +24,5 @@ std::string std::to_string(int32_t value)
 {
     return std::to_string((long long)value);
 }
+
+#endif
