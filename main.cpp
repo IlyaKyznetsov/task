@@ -1,5 +1,7 @@
 #include <pcap.h>
 
+#define __FAVOR_BSD
+
 #include <netinet/ether.h>
 #include <netinet/ip.h>
 #include <netinet/ip6.h>

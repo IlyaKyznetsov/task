@@ -12,3 +12,8 @@ add_executable(${PROJECT_NAME} ${SRC_LIST})
 target_link_libraries(${PROJECT_NAME} pcap)
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/build)
+
+#ilya            ALL=NOPASSWD:   /usr/bin/chmod, /usr/bin/chown
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND sudo chown root  ${EXECUTABLE_OUTPUT_PATH}/${PROJECT_NAME}
+                                                     COMMAND sudo chgrp root  ${EXECUTABLE_OUTPUT_PATH}/${PROJECT_NAME}
+                                                     COMMAND sudo chmod u+s   ${EXECUTABLE_OUTPUT_PATH}/${PROJECT_NAME})
